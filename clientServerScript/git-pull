@@ -1,0 +1,46 @@
+#!/bin/bash
+# Server deployment using git
+# Created on: 2012.04.13
+# Created by: Abraham Godong
+
+GIT_PATH="/usr/bin/git"
+GIT_REPO_URL=$1
+GIT_BRANCH=$2
+GIT_CL_DIR=$3
+CL_USER=""$4
+
+if [ -z "$GIT_REPO_URL" ]; then
+        echo "GIT repository URL was not specified." >&2
+        exit 1
+fi
+
+if [ -z "$GIT_CL_DIR" ]; then
+        echo "Destination directory was not specified." >&2
+        exit 1
+fi
+
+if [ ! -x "$GIT_PATH" ]; then
+        apt-get -q -y install git-core
+    if [ ! -x "$GIT_PATH" ]; then
+            echo "$GIT_PATH is not executable (git is not installed)" >&2
+            exit 1
+    fi
+fi
+if [ -d "$GIT_CL_DIR"/.git ]; then
+    cd "$GIT_CL_DIR"
+    if $GIT_PATH status >/dev/null 2>&1; then
+        echo "Trying to fetch from all repositories" >&2
+        $GIT_PATH fetch --all
+        GIT_REVISION=$($GIT_PATH rev-list $GIT_BRANCH | head -1)
+        echo "Trying to switch to the right edition: $GIT_REVISION" >&2
+        $GIT_PATH checkout -f $GIT_REVISION
+        echo "Trying to chown everything" >&2
+        chown -R $CL_USER:$CL_USER $GIT_CL_DIR
+        echo "Everything looks good!" >&2
+        exit 0
+    fi
+else
+    echo "Git does not exist yet!"
+fi
+
+echo "All activities done!"
